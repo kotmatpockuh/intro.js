@@ -367,7 +367,7 @@
     var referenceLayer = targetElement.querySelector('.introjs-tooltipReferenceLayer');
     if (referenceLayer) {
       referenceLayer.parentNode.removeChild(referenceLayer);
-	}
+  }
     //remove disableInteractionLayer
     var disableInteractionLayer = targetElement.querySelector('.introjs-disableInteraction');
     if (disableInteractionLayer) {
@@ -457,9 +457,24 @@
         currentTooltipPosition = _determineAutoPosition.call(this, targetElement, tooltipLayer, currentTooltipPosition)
       }
     }
-    var targetOffset = _getOffset(targetElement)
-    var tooltipHeight = _getOffset(tooltipLayer).height
-    var windowSize = _getWinSize()
+    var targetOffset = _getOffset(targetElement);
+    var tooltipHeight = _getOffset(tooltipLayer).height;
+    var windowSize = _getWinSize();
+    var pointerElement = null;
+    var pointerElementPosition = [];
+    for (var i = 0; i < targetElement.childNodes.length; i++) {
+      if (typeof (targetElement.childNodes[i].className) !== 'undefined' && 
+        targetElement.childNodes[i].className.indexOf('tutorial-pointer') > -1) {
+          pointerElement = targetElement.childNodes[i];
+          pointerElementPosition = _getOffset(pointerElement);
+          break;
+      }
+    }
+    if (pointerElement === null && targetElement.className.indexOf('tutorial-pointer') > -1){
+      pointerElement = targetElement;
+      pointerElementPosition = _getOffset(pointerElement);
+    }
+
     switch (currentTooltipPosition) {
       case 'top':
         tooltipLayer.style.left = '15px';
@@ -467,6 +482,8 @@
         arrowLayer.className = 'introjs-arrow bottom';
         break;
       case 'right':
+        arrowLayer.style.right = '';
+        arrowLayer.style.top = '';
         tooltipLayer.style.left = (_getOffset(targetElement).width + 20) + 'px';
         if (targetOffset.top + tooltipHeight > windowSize.height) {
           // In this case, right would have fallen below the bottom of the screen.
@@ -475,8 +492,19 @@
           tooltipLayer.style.top = "-" + (tooltipHeight - targetOffset.height - 20) + "px"
         }
         arrowLayer.className = 'introjs-arrow left';
+        if (typeof targetElement.arrowTopOffset !== 'undefined'){
+          arrowLayer.style.top = targetElement.arrowTopOffset + 'px';
+        }
+        if (pointerElement !== null){
+          arrowLayer.style.top = (targetElement.height / 2 - 2 ) + 'px';
+        }
+        if (typeof this._introItems[this._currentStep].arrowTopOffset !== 'undefined'){
+          arrowLayer.style.top = this._introItems[this._currentStep].arrowTopOffset + 'px';
+        }
         break;
       case 'left':
+        arrowLayer.style.right = '';
+        arrowLayer.style.bottom = '';
         if (this._options.showStepNumbers == true) {
           tooltipLayer.style.top = '15px';
         }
@@ -489,8 +517,14 @@
         } else {
           arrowLayer.className = 'introjs-arrow right';
         }
-        tooltipLayer.style.right = (targetOffset.width + 20) + 'px';
 
+        tooltipLayer.style.right = (targetOffset.width + 20) + 'px';
+        if (pointerElement !== null){
+          arrowLayer.style.top = (pointerElementPosition.height / 2 - 2 ) + 'px';
+        }
+        if (typeof this._introItems[this._currentStep].arrowTopOffset !== 'undefined'){
+          arrowLayer.style.top = this._introItems[this._currentStep].arrowTopOffset + 'px';
+        }
 
         break;
       case 'floating':
@@ -511,9 +545,14 @@
 
         break;
       case 'bottom-right-aligned':
+        arrowLayer.style.right = '';
+        arrowLayer.style.top = '';
         arrowLayer.className      = 'introjs-arrow top-right';
         tooltipLayer.style.right  = '0px';
         tooltipLayer.style.bottom = '-' + (_getOffset(tooltipLayer).height + 10) + 'px';
+        if (pointerElement !== null){
+          arrowLayer.style.right = (pointerElementPosition.width / 2 - 4) + 'px';
+        }
         break;
       case 'bottom-middle-aligned':
         targetElementOffset = _getOffset(targetElement);
@@ -522,6 +561,32 @@
         arrowLayer.className      = 'introjs-arrow top-middle';
         tooltipLayer.style.left   = (targetElementOffset.width / 2 - tooltipOffset.width / 2) + 'px';
         tooltipLayer.style.bottom = '-' + (tooltipOffset.height + 10) + 'px';
+        break;
+      case 'custom':
+        tooltipLayer.style.top = this._introItems[this._currentStep].topPos;
+        tooltipLayer.style.left = this._introItems[this._currentStep].leftPos;
+        tooltipLayer.style.bottom = this._introItems[this._currentStep].bottomPos;
+        tooltipLayer.style.right = this._introItems[this._currentStep].rightPos;
+        if (typeof this._introItems[this._currentStep].arrowTopOffset !== 'undefined'){
+          arrowLayer.style.top = this._introItems[this._currentStep].arrowTopOffset + 'px';
+        }
+        if (typeof this._introItems[this._currentStep].arrowRightOffset !== 'undefined'){
+          arrowLayer.className = 'introjs-arrow right';
+          arrowLayer.style.right = this._introItems[this._currentStep].arrowRightOffset + 'px';
+        }
+        break;
+      case 'custom-bottom':
+        arrowLayer.style.right = '';
+        arrowLayer.style.left = '';
+        arrowLayer.style.top = '';
+        arrowLayer.style.bottom = '';
+        if (typeof this._introItems[this._currentStep].arrowBottomOffset !== 'undefined'){
+          arrowLayer.style.bottom = this._introItems[this._currentStep].arrowBottomOffset + 'px';
+        }
+        if (typeof this._introItems[this._currentStep].arrowRightOffset !== 'undefined'){
+          arrowLayer.style.right = this._introItems[this._currentStep].arrowRightOffset + 'px';
+        }
+        arrowLayer.className = 'introjs-arrow bottom';
         break;
       case 'bottom-left-aligned':
       // Bottom-left-aligned is the same as the default bottom
@@ -632,13 +697,42 @@
       if (currentElement.position == 'floating') {
         widthHeightPadding = 0;
       }
-
+      //debugger;
       //set new position to helper layer
-      helperLayer.setAttribute('style', 'width: ' + (elementPosition.width  + widthHeightPadding)  + 'px; ' +
-                                        'height:' + (elementPosition.height + widthHeightPadding)  + 'px; ' +
-                                        'top:'    + (elementPosition.top    - 5)   + 'px;' +
-                                        'left: '  + (elementPosition.left   - 5)   + 'px;');
+      var offsetL = 5;
+      var offsetT = 5;
+      var offsetB = 5;
+      if (typeof this._introItems[this._currentStep].offsetLeft !== 'undefined'){
+        offsetL = this._introItems[this._currentStep].offsetLeft;
+      }
+      if (typeof this._introItems[this._currentStep].offsetTop !== 'undefined'){
+        offsetT = this._introItems[this._currentStep].offsetTop;
+      }
+      if (typeof this._introItems[this._currentStep].offsetBottom !== 'undefined'){
+        offsetB = this._introItems[this._currentStep].offsetBottom;
+      }
+      helperLayer.setAttribute('style', 'z-index: ' + '');
 
+      if (this._introItems[this._currentStep].position === 'custom'){
+        helperLayer.setAttribute('style', 'width: ' + (1)  + 'px; ' +
+                                        'height:' + (1)  + 'px; ' +
+                                        'top:'    + (elementPosition.top    - offsetT)   + 'px;' +
+                                        'left: '  + (elementPosition.left   - this._introItems[this._currentStep].offsetLeft)   + 'px;' +
+                                        'z-index: ' + '9999999;');
+      }
+      else if (this._introItems[this._currentStep].position === 'custom-bottom'){
+        helperLayer.setAttribute('style', 'width: ' + (1)  + 'px; ' +
+                                        'height:' + (1)  + 'px; ' +
+                                        'bottom:'    + (offsetB)   + 'px;' +
+                                        'right: '  + (this._introItems[this._currentStep].offsetRight)   + 'px;' +
+                                        'z-index: ' + '9999999;');
+      }
+      else{
+        helperLayer.setAttribute('style', 'width: ' + (elementPosition.width  + widthHeightPadding)  + 'px; ' +
+                                        'height:' + (elementPosition.height + widthHeightPadding + 20)  + 'px; ' +
+                                        'top:'    + (elementPosition.top    - offsetT)   + 'px;' +
+                                        'left: '  + (elementPosition.left   - offsetL)   + 'px;');
+      }
     }
   }
 
